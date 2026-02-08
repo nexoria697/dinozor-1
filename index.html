@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrome Dinozor Oyunu - Pil Sürümü</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: Arial, sans-serif;
+        }
+
+        .game-container {
+            position: relative;
+            width: 800px;
+            height: 400px;
+            background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
+            border: 3px solid #333;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 60px;
+            background: #90EE90;
+            border-top: 2px solid #7CB342;
+        }
+
+        .battery {
+            position: absolute;
+            bottom: 70px;
+            right: 100px;
+            width: 80px;
+            height: 120px;
+            border: 3px solid #333;
+            background: #FFF;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            overflow: hidden;
+        }
+
+        .battery::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 10px;
+            background: #333;
+            border-radius: 2px;
+        }
+
+        .battery-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, #4CAF50, #8BC34A);
+            transition: height 0.3s ease;
+        }
+
+        .battery-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+            color: #333;
+            z-index: 10;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+        }
+
+        .dinosaur {
+            position: absolute;
+            bottom: 60px;
+            left: 50px;
+            width: 50px;
+            height: 50px;
+            background: #228B22;
+            clip-path: polygon(
+                10% 50%, 20% 30%, 30% 20%, 40% 25%, 45% 15%, 50% 25%, 
+                55% 35%, 60% 30%, 70% 40%, 75% 50%, 70% 60%, 60% 55%, 
+                50% 60%, 40% 55%, 30% 60%, 20% 55%, 15% 60%, 10% 55%
+            );
+        }
+
+        .dinosaur::before {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #000;
+            border-radius: 50%;
+            top: 15px;
+            right: 8px;
+        }
+
+        .dinosaur.jump {
+            animation: jump 0.6s ease;
+        }
+
+        @keyframes jump {
+            0% {
+                bottom: 60px;
+            }
+            50% {
+                bottom: 150px;
+            }
+            100% {
+                bottom: 60px;
+            }
+        }
+
+        .cactus {
+            position: absolute;
+            bottom: 60px;
+            width: 30px;
+            height: 60px;
+            background: #228B22;
+        }
+
+        .cactus::before,
+        .cactus::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 30px;
+            background: #228B22;
+            top: 15px;
+        }
+
+        .cactus::before {
+            left: -15px;
+        }
+
+        .cactus::after {
+            right: -15px;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+            display: none;
+        }
+
+        .game-over h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        .game-over p {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .game-over button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .game-over button:hover {
+            background: #45a049;
+        }
+
+        .score {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .instructions {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 14px;
+            color: #333;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .battery-percentage {
+            position: absolute;
+            bottom: 10px;
+            left: 20px;
+            font-size: 14px;
+            color: #333;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="instructions">SPACE tuşu = Zıpla</div>
+        <div class="score">Skor: <span id="score">0</span></div>
+        <div class="battery">
+            <div class="battery-text"><span id="battery-percent">100</span>%</div>
+            <div class="battery-fill"></div>
+        </div>
+        <div class="battery-percentage">Pil: <span id="battery-display">100</span>%</div>
+        <div class="dinosaur" id="dinosaur"></div>
+        <div class="ground"></div>
+        <div class="game-over" id="gameOver">
+            <h1>OYUN BİTTİ!</h1>
+            <p>Final Skor: <span id="finalScore">0</span></p>
+            <button onclick="location.reload()">YENİDEN BAŞLA</button>
+        </div>
+    </div>
+
+    <script>
+        const dinosaur = document.getElementById('dinosaur');
+        const gameContainer = document.getElementById('game-container');
+        const gameOverScreen = document.getElementById('gameOver');
+        const scoreDisplay = document.getElementById('score');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const batteryFill = document.querySelector('.battery-fill');
+        const batteryPercent = document.getElementById('battery-percent');
+        const batteryDisplay = document.getElementById('battery-display');
+
+        let isJumping = false;
+        let score = 0;
+        let battery = 100;
+        let gameActive = true;
+        let lastCactusTime = 0;
+
+        // Space tuşu ile zıplama
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (!isJumping && gameActive) {
+                    jump();
+                    consumeBattery();
+                }
+            }
+        });
+
+        function jump() {
+            isJumping = true;
+            dinosaur.classList.add('jump');
+            
+            setTimeout(() => {
+                dinosaur.classList.remove('jump');
+                isJumping = false;
+            }, 600);
+        }
+
+        function createCactus() {
+            if (!gameActive) return;
+            
+            const now = Date.now();
+            if (now - lastCactusTime < 1500) return;
+            lastCactusTime = now;
+
+            const cactus = document.createElement('div');
+            cactus.className = 'cactus';
+            cactus.style.left = window.innerWidth + 'px';
+            
+            const gameContainer = document.querySelector('.game-container');
+            gameContainer.appendChild(cactus);
+
+            let position = window.innerWidth;
+            const moveInterval = setInterval(() => {
+                position -= 5;
+                cactus.style.left = position + 'px';
+
+                // Çarpışma kontrolü
+                if (checkCollision(dinosaur, cactus)) {
+                    clearInterval(moveInterval);
+                    gameOver();
+                }
+
+                if (position < -50) {
+                    clearInterval(moveInterval);
+                    cactus.remove();
+                    score += 10;
+                    scoreDisplay.textContent = score;
+                }
+            }, 30);
+        }
+
+        function checkCollision(dino, cactus) {
+            const dinoRect = dino.getBoundingClientRect();
+            const cactusRect = cactus.getBoundingClientRect();
+
+            return !(
+                dinoRect.right < cactusRect.left ||
+                dinoRect.left > cactusRect.right ||
+                dinoRect.bottom < cactusRect.top ||
+                dinoRect.top > cactusRect.bottom
+            );
+        }
+
+        function consumeBattery() {
+            if (battery > 0) {
+                battery -= 5;
+                if (battery < 0) battery = 0;
+                updateBatteryDisplay();
+            }
+
+            if (battery <= 0) {
+                gameOver();
+            }
+        }
+
+        function updateBatteryDisplay() {
+            const percentage = Math.max(0, battery);
+            batteryFill.style.height = percentage + '%';
+            batteryPercent.textContent = Math.floor(percentage);
+            batteryDisplay.textContent = Math.floor(percentage);
+
+            // Pil azaldıkça renk değişimi
+            if (percentage > 50) {
+                batteryFill.style.background = 'linear-gradient(to top, #4CAF50, #8BC34A)';
+            } else if (percentage > 20) {
+                batteryFill.style.background = 'linear-gradient(to top, #FF9800, #FFB74D)';
+            } else {
+                batteryFill.style.background = 'linear-gradient(to top, #F44336, #EF5350)';
+            }
+        }
+
+        function gameOver() {
+            gameActive = false;
+            gameOverScreen.style.display = 'block';
+            finalScoreDisplay.textContent = score;
+        }
+
+        // Oyun döngüsü
+        setInterval(() => {
+            if (gameActive) {
+                createCactus();
+            }
+        }, 2000);
+
+        // Pil şarjını otomatik olarak biraz artır (çevre aktif değilse)
+        setInterval(() => {
+            if (battery < 100 && gameActive) {
+                battery += 0.5;
+                if (battery > 100) battery = 100;
+                updateBatteryDisplay();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
