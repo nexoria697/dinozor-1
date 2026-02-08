@@ -243,7 +243,7 @@
 
     <script>
         const dinosaur = document.getElementById('dinosaur');
-        const gameContainer = document.getElementById('game-container');
+        const gameContainer = document.querySelector('.game-container');
         const gameOverScreen = document.getElementById('gameOver');
         const scoreDisplay = document.getElementById('score');
         const finalScoreDisplay = document.getElementById('finalScore');
@@ -256,6 +256,7 @@
         let battery = 100;
         let gameActive = true;
         let lastCactusTime = 0;
+        let dinoY = 60; // Dinozor Y pozisyonu
 
         // Space tuşu ile zıplama
         document.addEventListener('keydown', (e) => {
@@ -272,10 +273,22 @@
             isJumping = true;
             dinosaur.classList.add('jump');
             
-            setTimeout(() => {
-                dinosaur.classList.remove('jump');
-                isJumping = false;
-            }, 600);
+            // Zıplama animasyonunu takip et
+            let jumpProgress = 0;
+            const jumpInterval = setInterval(() => {
+                jumpProgress += 1;
+                
+                // Parabol formülü ile Y pozisyonunu hesapla
+                const maxHeight = 250;
+                dinoY = 60 + (maxHeight * Math.sin((jumpProgress / 60) * Math.PI) * (1 - jumpProgress / 60));
+                
+                if (jumpProgress >= 60) {
+                    clearInterval(jumpInterval);
+                    dinoY = 60;
+                    dinosaur.classList.remove('jump');
+                    isJumping = false;
+                }
+            }, 10);
         }
 
         function createCactus() {
@@ -287,18 +300,16 @@
 
             const cactus = document.createElement('div');
             cactus.className = 'cactus';
-            cactus.style.left = window.innerWidth + 'px';
-            
-            const gameContainer = document.querySelector('.game-container');
+            cactus.style.left = gameContainer.offsetWidth + 'px';
             gameContainer.appendChild(cactus);
 
-            let position = window.innerWidth;
+            let position = gameContainer.offsetWidth;
             const moveInterval = setInterval(() => {
                 position -= 5;
                 cactus.style.left = position + 'px';
 
-                // Çarpışma kontrolü
-                if (checkCollision(dinosaur, cactus)) {
+                // Çarpışma kontrolü - sadece dinozor yerde iken kontrol et
+                if (!isJumping && checkCollision(dinosaur, cactus)) {
                     clearInterval(moveInterval);
                     gameOver();
                 }
@@ -316,9 +327,14 @@
             const dinoRect = dino.getBoundingClientRect();
             const cactusRect = cactus.getBoundingClientRect();
 
+            // Dinozor zıplayıp yukarıda ise çarpışma yok
+            if (dinoRect.bottom < cactusRect.bottom) {
+                return false;
+            }
+
             return !(
-                dinoRect.right < cactusRect.left ||
-                dinoRect.left > cactusRect.right ||
+                dinoRect.right < cactusRect.left + 5 ||
+                dinoRect.left > cactusRect.right - 5 ||
                 dinoRect.bottom < cactusRect.top ||
                 dinoRect.top > cactusRect.bottom
             );
@@ -365,7 +381,7 @@
             }
         }, 2000);
 
-        // Pil şarjını otomatik olarak biraz artır (çevre aktif değilse)
+        // Pil şarjını otomatik olarak biraz artır
         setInterval(() => {
             if (battery < 100 && gameActive) {
                 battery += 0.5;
